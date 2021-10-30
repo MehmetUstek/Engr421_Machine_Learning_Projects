@@ -39,10 +39,10 @@ def get_score_values(x):
                             + safelog(class_priors[c])
                             for c in range(K)]), axis=2)
 
+
 # ---- Train
 score_values1 = get_score_values(x_train)
-score_values1 = np.transpose(score_values1)
-y_predicted = np.argmax(score_values1, axis=1) + 1
+y_predicted = np.argmax(score_values1, axis=0) + 1
 
 # Confusion Matrix
 
