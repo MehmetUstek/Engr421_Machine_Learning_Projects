@@ -60,11 +60,16 @@ Y_truth[range(N), y_truth - 1] = 1
 
 # define the softmax function
 #TODO: Only change will be softmax to K sigmoid functions.
+# TODO: Change this.
 def softmax(X, W, w0):
     scores = np.matmul(np.hstack((X, np.ones((N, 1)))), np.vstack((W, w0)))
     scores = np.exp(scores - np.repeat(np.amax(scores, axis = 1, keepdims = True), K, axis = 1))
     scores = scores / np.repeat(np.sum(scores, axis = 1, keepdims = True), K, axis = 1)
     return(scores)
+
+# define the sigmoid function
+def sigmoid(X, w, w0):
+    return(1 / (1 + np.exp(-(np.matmul(X, w) + w0))))
 
 # define the gradient functions
 def gradient_W(X, Y_truth, Y_predicted):
@@ -79,7 +84,7 @@ epsilon = 0.001
 
 
 # randomly initalize W and w0
-np.random.seed(421)
+# np.random.seed(421)
 W = np.random.uniform(low = -0.01, high = 0.01, size = (X.shape[1], K))
 w0 = np.random.uniform(low = -0.01, high = 0.01, size = (1, K))
 
@@ -87,9 +92,9 @@ w0 = np.random.uniform(low = -0.01, high = 0.01, size = (1, K))
 iteration = 1
 objective_values = []
 while 1:
-    Y_predicted = softmax(X, W, w0)
-
-    objective_values = np.append(objective_values, -np.sum(Y_truth * safelog(Y_predicted)))
+    Y_predicted = sigmoid(X, W, w0)
+    # TODO: Change this.
+    objective_values = np.append(objective_values, 0.5 * np.sum((Y_truth - Y_predicted)**2))
 
     W_old = W
     w0_old = w0
