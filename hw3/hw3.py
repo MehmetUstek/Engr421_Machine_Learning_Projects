@@ -7,18 +7,22 @@ def safelog(x):
 
 np.random.seed(421)
 # mean parameters
-class_means = np.array([[+0.0, +1.5],
-                        [-2.5, -3.0],
-                        [+2.5, -3.0]])
-# covariance parameters
-class_covariances = np.array([[[+1.0, +0.2],
-                               [+0.2, +3.2]],
-                              [[+1.6, -0.8],
-                               [-0.8, +1.0]],
-                              [[+1.6, +0.8],
-                               [+0.8, +1.0]]])
+class_means = np.array([[0.0, 2.5], [-2.5, -2.0], [2.5, -2.0]])
+
+class_covariances = np.array([[
+    [3.2, 0.0],
+    [0.0, 1.2]],
+    [
+        [1.2, 0.8],
+        [0.8, 1.2]
+    ],
+    [
+        [1.2, -0.8],
+        [-0.8, 1.2]
+    ]
+])
 # sample sizes
-class_sizes = np.array([100, 100, 100])
+class_sizes = np.array([120, 80, 100])
 
 # generate random samples
 points1 = np.random.multivariate_normal(class_means[0,:], class_covariances[0,:,:], class_sizes[0])
