@@ -4,6 +4,7 @@ import pandas as pd
 
 # mean parameters
 class_means = np.array([[0.0, 2.5], [-2.5, -2.0], [2.5, -2.0]])
+# np.random.seed(421)
 
 class_covariances = np.array([[
     [3.2, 0.0],
@@ -66,11 +67,12 @@ def sigmoid(X, w, w0):
 
 # define the gradient functions
 def gradient_W(X, Y_truth, Y_predicted):
-    return (np.asarray([-np.matmul(Y_truth[:, c] - Y_predicted[:, c], X) for c in range(K)]).transpose())
-
+    return (np.asarray([-np.matmul((Y_truth[:, c] - Y_predicted[:, c])  * Y_predicted[:,c] * (1- Y_predicted[:,c]), X) for c in range(K)]).transpose())
+    # return (np.asarray([-np.matmul(Y_truth[:, c] - Y_predicted[:, c], X) for c in range(K)]).transpose())
 
 def gradient_w0(Y_truth, Y_predicted):
-    return (-np.sum(Y_truth - Y_predicted, axis=0))
+    return (-np.sum((Y_truth - Y_predicted) * Y_predicted * (1- Y_predicted), axis=0))
+    # return (-np.sum((Y_truth - Y_predicted) , axis=0))
 
 
 # set learning parameters
@@ -78,7 +80,6 @@ eta = 0.01
 epsilon = 0.001
 
 # randomly initalize W and w0
-# np.random.seed(421)
 W = np.random.uniform(low=-0.01, high=0.01, size=(X.shape[1], K))
 w0 = np.random.uniform(low=-0.01, high=0.01, size=(1, K))
 
@@ -87,7 +88,6 @@ iteration = 1
 objective_values = []
 while 1:
     Y_predicted = sigmoid(X, W, w0)
-    # TODO: Change this.
     objective_values = np.append(objective_values, 0.5 * np.sum((Y_truth - Y_predicted) ** 2))
     W_old = W
     w0_old = w0
@@ -99,6 +99,7 @@ while 1:
         break
 
     iteration = iteration + 1
+print("Parameters W and w0")
 print(W)
 print(w0)
 
@@ -112,6 +113,7 @@ plt.show()
 # calculate confusion matrix
 y_predicted = np.argmax(Y_predicted, axis=1) + 1
 confusion_matrix = pd.crosstab(y_predicted, y_truth, rownames=['y_pred'], colnames=['y_truth'])
+print("Confusion Matrix")
 print(confusion_matrix)
 
 # evaluate discriminant function on a grid
