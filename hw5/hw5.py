@@ -32,7 +32,7 @@ need_split = {}
 
 node_features = {} # j value in x_j > w_m0 in the lecture notes.
 node_splits = {} # w_m0 value in x_j > w_m0 in the lecture notes.
-node_frequencies = {} # N_m,c values in the lecture notes.
+node_means = {}
 
 # put all training instances into the root node
 node_indices[1] = np.array(range(N_train))
@@ -56,6 +56,8 @@ while True:
         if len(data_indices) <= P:
             # TODO: Change terminal
             is_terminal[split_node] = True
+            node_mean = np.mean(y_train[data_indices])
+            node_means[split_node] = node_mean
             # Check whether this leaf is pure.
         else:
             is_terminal[split_node] = False
@@ -82,8 +84,8 @@ while True:
                     # TODO: Change score.
                     data_points_size = 1 / len(data_indices)
                     score = 0.0
-                    average_left_indices = np.average(y_train[left_indices])
-                    average_right_indices = np.average(y_train[right_indices])
+                    average_left_indices = np.mean(y_train[left_indices])
+                    average_right_indices = np.mean(y_train[right_indices])
                     for c in left_indices:
                         score += (c - average_left_indices)**2
                     for c in right_indices:
@@ -113,6 +115,23 @@ while True:
             is_terminal[2 * split_node + 1] = False
             need_split[2 * split_node + 1] = True
 
+max_val = max(x_train)
+origin = min(x_train)
+step = 1 / 2000
+step_inverse = 2000
+data_interval = np.arange(origin, max_val, step)
+
+
+
+
+plt.figure(figsize=(10, 6))
+plt.plot(x_train, y_train, "b.", markersize=10, label='training')
+plt.plot(x_test, y_test, "r.", markersize=10, label='test')
+plt.xlabel("Eruption time (min)")
+plt.ylabel("Waiting time to next eruption (min)")
+plt.legend(loc='upper left')
+
+
 
 # extract rules
 terminal_nodes = [key for key, value in is_terminal.items() if value == True]
@@ -129,7 +148,8 @@ for terminal_node in terminal_nodes:
             rules = np.append(rules, "x{:d} <= {:.2f}".format(node_features[parent] + 1, node_splits[parent]))
         index = parent
     rules = np.flip(rules)
-    print("{} => {}".format(rules, node_frequencies[terminal_node]))
+    # print(rules)
+    print("{} => {}".format(rules, node_means[terminal_node]))
 
 # traverse tree for training data points
 y_predicted = np.repeat(0, N_train)
@@ -137,12 +157,20 @@ for i in range(N_train):
     index = 1
     while True:
         if is_terminal[index] == True:
-            y_predicted[i] = np.argmax(node_frequencies[index]) + 1
+            y_predicted[i] = node_means[index]
             break
         else:
             if train_set[i, node_features[index]] > node_splits[index]:
                 index = index * 2
             else:
                 index = index * 2 + 1
-confusion_matrix = pd.crosstab(y_predicted, y_train, rownames = ["y_predicted"], colnames = ["y_train"])
-print(confusion_matrix)
+
+def calculate_RMSE():
+    error_list = []
+    for i in range(len(x_test)):
+        error = (y_test[i] - y_predicted[int((x_test[i]))]) ** 2
+        error_list.append(error)
+    rmse = np.sqrt(np.sum(error_list) / len(x_test))
+    print("RMSE on training set is", rmse, " when P is", P)
+
+calculate_RMSE()
