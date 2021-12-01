@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 data_set = np.genfromtxt("hw05_data_set.csv", skip_header=1, delimiter=",")
 # Divide the data, 150 to training, rest to test
-train_set = data_set[0:150]
+train_set = data_set[:150]
 test_set = data_set[-122:]
 x_train = train_set[:, 0]
 y_train = train_set[:, 1]
@@ -16,7 +16,8 @@ N = train_set.shape[0]
 N_train = len(y_train)
 N_test = len(y_test)
 
-print(x_train)
+print(len(x_train))
+print(len(x_test))
 # print(y_train)
 
 
@@ -94,7 +95,7 @@ def predict(point, is_terminal, node_splits, node_means):
         if is_terminal[index] == True:
             return node_means[index]
         else:
-            if point >= node_splits[index]:
+            if point > node_splits[index]:
                 index = 2*index
             else:
                 index = 2*index + 1
@@ -102,7 +103,7 @@ def predict(point, is_terminal, node_splits, node_means):
 # set = data_set[:,0]
 max_val = max(x_train)
 origin = min(x_train)
-data_points = np.linspace(origin, max_val, 1000)
+data_points = np.linspace(origin-0.1, max_val+0.1, 1000)
 
 is_terminal, node_splits, node_means = learn(25)
 
@@ -118,19 +119,19 @@ plt.legend(loc='upper left')
 plt.plot(data_points, y_predicted, "k")
 plt.show()
 
-def calculate_RMSE(P, y_predicted, y_truth, type):
+def calculate_RMSE(P, y_predicted, y_truth,x_length, type):
     error = 0.0
-    for i in range(len(x_test)):
+    for i in range(x_length):
         error += (y_truth[i] - y_predicted[i]) ** 2
-    rmse = np.sqrt(np.sum(error) / len(x_test))
+    rmse = np.sqrt(error / x_length)
     print("RMSE on ", type, " set is", rmse, " when P is", P)
     return rmse
 
 
-y_predicted_train = [predict(x_train[i], is_terminal, node_splits, node_means) for i in range(len(x_train))]
-y_predicted_test = [predict(x_test[i], is_terminal, node_splits, node_means) for i in range(len(x_test))]
-calculate_RMSE(25, y_predicted_train,y_train, "training")
-calculate_RMSE(25, y_predicted_test,y_test, "test")
+y_predicted_train = [predict(i, is_terminal, node_splits, node_means) for i in x_train]
+y_predicted_test = [predict(i, is_terminal, node_splits, node_means) for i in x_test]
+calculate_RMSE(25, y_predicted_train,y_train,N_train, "training")
+calculate_RMSE(25, y_predicted_test,y_test,N_test, "test")
 
 # Different P values.
 # P = 5
@@ -140,10 +141,10 @@ rmse_train_list = []
 rmse_test_list = []
 for P in P_values:
     is_terminal, node_splits, node_means = learn(P)
-    y_predicted_train = [predict(x_train[i], is_terminal, node_splits, node_means) for i in range(len(x_train))]
-    y_predicted_test = [predict(x_test[i], is_terminal, node_splits, node_means) for i in range(len(x_test))]
-    rmse_train = calculate_RMSE(P, y_predicted_train,y_train, "training")
-    rmse_test = calculate_RMSE(P, y_predicted_test,y_test, "test")
+    y_predicted_train = [predict(i, is_terminal, node_splits, node_means) for i in x_train]
+    y_predicted_test = [predict(i, is_terminal, node_splits, node_means) for i in x_test]
+    rmse_train = calculate_RMSE(P, y_predicted_train,y_train,N_train, "training")
+    rmse_test = calculate_RMSE(P, y_predicted_test,y_test,N_test, "test")
     rmse_train_list.append(rmse_train)
     rmse_test_list.append(rmse_test)
 
