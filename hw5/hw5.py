@@ -16,8 +16,9 @@ N = train_set.shape[0]
 N_train = len(y_train)
 N_test = len(y_test)
 
-print(len(x_train))
-print(len(x_test))
+
+# print(len(x_train))
+# print(len(x_test))
 # print(y_train)
 
 
@@ -28,7 +29,7 @@ def learn(P):
     need_split = {}
 
     node_splits = {}  # w_m0 value in x_j > w_m0 in the lecture notes.
-    node_means = {}
+    means = {}
 
     # put all training instances into the root node
     node_indices[1] = np.array(range(N_train))
@@ -48,7 +49,7 @@ def learn(P):
             node_mean = np.mean(y_train[data_indices])
             if len(data_indices) <= P:
                 is_terminal[split_node] = True
-                node_means[split_node] = node_mean
+                means[split_node] = node_mean
             else:
                 is_terminal[split_node] = False
                 unique_values = np.sort(np.unique(x_train[data_indices]))
@@ -72,7 +73,6 @@ def learn(P):
                     score = score * data_points_size
                     split_scores[s] = score
 
-
                 best_splits = split_positions[np.argmin(split_scores)]
                 node_splits[split_node] = best_splits  # w_m0 in the lecture notes.
 
@@ -87,28 +87,29 @@ def learn(P):
                 node_indices[2 * split_node + 1] = right_indices
                 is_terminal[2 * split_node + 1] = False
                 need_split[2 * split_node + 1] = True
-    return is_terminal, node_splits, node_means
+    return is_terminal, node_splits, means
 
-def predict(point, is_terminal, node_splits, node_means):
+
+def predict(point, is_terminal, node_splits, means):
     index = 1
-    while(True):
+    while (True):
         if is_terminal[index] == True:
-            return node_means[index]
+            return means[index]
         else:
             if point > node_splits[index]:
-                index = 2*index
+                index = 2 * index
             else:
-                index = 2*index + 1
+                index = 2 * index + 1
+
 
 # set = data_set[:,0]
 max_val = max(x_train)
 origin = min(x_train)
-data_points = np.linspace(origin-0.1, max_val+0.1, 1000)
+data_points = np.linspace(origin - 0.1, max_val + 0.1, 1000)
 
-is_terminal, node_splits, node_means = learn(25)
+is_terminal, node_splits, means = learn(25)
 
-y_predicted = [predict(data_points[i], is_terminal, node_splits, node_means) for i in range(len(data_points))]
-
+y_predicted = [predict(data_points[i], is_terminal, node_splits, means) for i in range(len(data_points))]
 
 plt.figure(figsize=(10, 6))
 plt.plot(x_train, y_train, "b.", markersize=10, label='training')
@@ -119,42 +120,41 @@ plt.legend(loc='upper left')
 plt.plot(data_points, y_predicted, "k")
 plt.show()
 
-def calculate_RMSE(P, y_predicted, y_truth,x_length, type):
+
+def calculate_RMSE(P, y_predicted, y_truth, x_length, type, is_print: bool):
     error = 0.0
     for i in range(x_length):
         error += (y_truth[i] - y_predicted[i]) ** 2
     rmse = np.sqrt(error / x_length)
-    print("RMSE on ", type, " set is", rmse, " when P is", P)
+    if is_print:
+        print("RMSE on ", type, " set is", rmse, " when P is", P)
     return rmse
 
 
-y_predicted_train = [predict(i, is_terminal, node_splits, node_means) for i in x_train]
-y_predicted_test = [predict(i, is_terminal, node_splits, node_means) for i in x_test]
-calculate_RMSE(25, y_predicted_train,y_train,N_train, "training")
-calculate_RMSE(25, y_predicted_test,y_test,N_test, "test")
+y_predicted_train = [predict(i, is_terminal, node_splits, means) for i in x_train]
+y_predicted_test = [predict(i, is_terminal, node_splits, means) for i in x_test]
+calculate_RMSE(25, y_predicted_train, y_train, N_train, "training", is_print=True)
+calculate_RMSE(25, y_predicted_test, y_test, N_test, "test", is_print=True)
 
 # Different P values.
 # P = 5
-P_values = [5,10,15,20,25,30,35,40,45,50]
+P_values = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
 # P = 5
 rmse_train_list = []
 rmse_test_list = []
 for P in P_values:
-    is_terminal, node_splits, node_means = learn(P)
-    y_predicted_train = [predict(i, is_terminal, node_splits, node_means) for i in x_train]
-    y_predicted_test = [predict(i, is_terminal, node_splits, node_means) for i in x_test]
-    rmse_train = calculate_RMSE(P, y_predicted_train,y_train,N_train, "training")
-    rmse_test = calculate_RMSE(P, y_predicted_test,y_test,N_test, "test")
+    is_terminal, node_splits, means = learn(P)
+    y_predicted_train = [predict(i, is_terminal, node_splits, means) for i in x_train]
+    y_predicted_test = [predict(i, is_terminal, node_splits, means) for i in x_test]
+    rmse_train = calculate_RMSE(P, y_predicted_train, y_train, N_train, "training", is_print=False)
+    rmse_test = calculate_RMSE(P, y_predicted_test, y_test, N_test, "test", is_print=False)
     rmse_train_list.append(rmse_train)
     rmse_test_list.append(rmse_test)
-
-print(rmse_train_list)
-print(rmse_test_list)
 
 plt.figure(figsize=(6, 6))
 plt.plot(P_values, rmse_train_list, "-ob", markersize=4, label='training')
 plt.plot(P_values, rmse_test_list, "-or", markersize=4, label='test')
-plt.xlabel("Eruption time (min)")
-plt.ylabel("Waiting time to next eruption (min)")
+plt.xlabel("Pre-pruning size (P)")
+plt.ylabel("RMSE")
 plt.legend(loc='upper right')
 plt.show()
