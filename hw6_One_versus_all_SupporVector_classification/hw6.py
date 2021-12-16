@@ -66,7 +66,7 @@ def func(y_truth, X_given, N_given, C, s, epsilon):
         # calculate predictions on training samples
         f_predicted.append(np.matmul(K_train, y_indexes[:, None] * alpha[:, None]) + w0)
 
-    y_predicted = np.argmax(f_predicted, axis=0)
+    y_predicted = np.argmax(f_predicted, axis=0) + 1
     y_predicted = y_predicted.reshape(-1)
     # print(y_predicted)
     return y_predicted
@@ -74,15 +74,15 @@ def func(y_truth, X_given, N_given, C, s, epsilon):
 C = 10
 epsilon = 1e-3
 s = 10
-y_predicted = func(y_train, X_train, N_train, C, s, epsilon)
-confusion_matrix = pd.crosstab(y_predicted, y_train, rownames = ['y_predicted'], colnames = ['y_train'])
+y_predicted_train1 = func(y_train, X_train, N_train, C, s, epsilon)
+confusion_matrix = pd.crosstab(y_predicted_train1, y_train, rownames = ['y_predicted'], colnames = ['y_train'])
 print(confusion_matrix)
 
 
-# y_predicted = func(y_test, X_test, N_test, C, s, epsilon)
-# confusion_matrix = pd.crosstab(y_predicted, y_test, rownames=['y_predicted'], colnames=['y_test'])
-# print("Confusion_matrix for test:")
-# print(confusion_matrix)
+y_predicted_test1 = func(y_test, X_test, N_test, C, s, epsilon)
+confusion_matrix = pd.crosstab(y_predicted_test1, y_test, rownames=['y_predicted'], colnames=['y_test'])
+print("Confusion_matrix for test:")
+print(confusion_matrix)
 
 # Accuracy score
 def accuracy_score(y_pred, y_truth):
