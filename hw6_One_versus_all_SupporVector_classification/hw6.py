@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import scipy.spatial.distance as dt
 import cvxopt as cvx
+import matplotlib.pyplot as plt
 
 def safelog(x):
     return (np.log(x + 1e-100))
@@ -13,12 +14,13 @@ labels = np.genfromtxt("hw06_labels.csv", delimiter = ",")
 X_train = images[:1000]
 y_train = labels[:1000].astype(int)
 # y_train = 2 * data_set[:,2].astype(int) - 1
-x_test = images[-4000:]
-y_test = labels[-4000:][0]
+X_test = images[-4000:]
+y_test = labels[-4000:].astype(int)
 K = 5
 # get number of samples and number of features
 N_train = len(y_train)
 D_train = X_train.shape[1]
+N_test = len(y_test)
 # print(D_train)
 
 
@@ -28,70 +30,101 @@ def gaussian_kernel(X1, X2, s):
     K = np.exp(-D**2 / (2 * s**2))
     return(K)
 
-# set learning parameters
+
+def func(y_truth, X_given, N_given, C, s, epsilon):
+    f_predicted = []
+    K_train = gaussian_kernel(X_given, X_given, s)
+    for k in range(1,K+1):
+        y_train_indexes = (y_truth == k).astype(int)
+        for index in range(len(y_train_indexes)):
+            if not y_train_indexes[index]:
+                y_train_indexes[index] = -1
+
+        yyK = np.matmul(y_train_indexes[:, None], y_train_indexes[None, :]) * K_train
+        # print(yyK)
+        P = cvx.matrix(yyK)
+        q = cvx.matrix(-np.ones((N_given, 1)))
+        G = cvx.matrix(np.vstack((-np.eye(N_given), np.eye(N_given))))
+        h = cvx.matrix(np.vstack((np.zeros((N_given, 1)), C * np.ones((N_given, 1)))))
+        A = cvx.matrix(1.0 * y_train_indexes[None, :])
+        b = cvx.matrix(0.0)
+
+        # use cvxopt library to solve QP problems
+        result = cvx.solvers.qp(P, q, G, h, A, b)
+        alpha = np.reshape(result["x"], N_given)
+        # Most of the alpha values should be 0.
+        alpha[alpha < C * epsilon] = 0
+        alpha[alpha > C * (1 - epsilon)] = C
+        # print(alpha)
+        # What is the purpose of cutting small values to 0?
+        # What is the purpose of cutting larger values that are close to C directly to C value 10.
+        # To find support indices!
+        # Non zero alpha coefficient vectors are called support vectors!
+
+        # find bias parameter
+        support_indices, = np.where(alpha != 0)
+        # print(support_indices)
+        active_indices, = np.where(np.logical_and(alpha != 0, alpha < C))
+        # Alpha points between 0 and C. As seen in the ipynb subject to.
+        w0 = np.mean(
+            y_train_indexes[active_indices] * (1 - np.matmul(yyK[np.ix_(active_indices, support_indices)], alpha[support_indices])))
+
+        ## Training performance
+        # calculate predictions on training samples
+        f_predicted.append(np.matmul(K_train, y_train_indexes[:, None] * alpha[:, None]) + w0)
+    # print(f_predicted)
+
+    # calculate confusion matrix
+
+        # y_predicted = 2 * (f_predicted > 0.0) - 1
+    y_predicted = np.argmax(f_predicted, axis=0)
+    y_predicted = y_predicted.reshape(-1)
+    # print(y_predicted)
+    return y_predicted
+
 C = 10
 epsilon = 1e-3
 s = 10
-# calculate Gaussian kernel
-
-K_train = gaussian_kernel(X_train, X_train, s)
-# print("K_train", K_train)
-f_predicted = []
-y_predicted = []
-# def func(y_truth):
-for k in range(1,K+1):
-    y_train_indexes = (y_train == k).astype(int)
-    for index in range(len(y_train_indexes)):
-        if not y_train_indexes[index]:
-            y_train_indexes[index] = -1
-
-    yyK = np.matmul(y_train_indexes[:, None], y_train_indexes[None, :]) * K_train
-    # print(yyK)
-    P = cvx.matrix(yyK)
-    q = cvx.matrix(-np.ones((N_train, 1)))
-    G = cvx.matrix(np.vstack((-np.eye(N_train), np.eye(N_train))))
-    h = cvx.matrix(np.vstack((np.zeros((N_train, 1)), C * np.ones((N_train, 1)))))
-    A = cvx.matrix(1.0 * y_train_indexes[None, :])
-    b = cvx.matrix(0.0)
-
-    # use cvxopt library to solve QP problems
-    result = cvx.solvers.qp(P, q, G, h, A, b)
-    alpha = np.reshape(result["x"], N_train)
-    # Most of the alpha values should be 0.
-    alpha[alpha < C * epsilon] = 0
-    alpha[alpha > C * (1 - epsilon)] = C
-    # print(alpha)
-    # What is the purpose of cutting small values to 0?
-    # What is the purpose of cutting larger values that are close to C directly to C value 10.
-    # To find support indices!
-    # Non zero alpha coefficient vectors are called support vectors!
-
-    # find bias parameter
-    support_indices, = np.where(alpha != 0)
-    print(support_indices)
-    active_indices, = np.where(np.logical_and(alpha != 0, alpha < C))
-    # Alpha points between 0 and C. As seen in the ipynb subject to.
-    w0 = np.mean(
-        y_train_indexes[active_indices] * (1 - np.matmul(yyK[np.ix_(active_indices, support_indices)], alpha[support_indices])))
-
-    ## Training performance
-    # calculate predictions on training samples
-    f_predicted.append(np.matmul(K_train, y_train_indexes[:, None] * alpha[:, None]) + w0)
-print(f_predicted)
-
-# calculate confusion matrix
-
-    # y_predicted = 2 * (f_predicted > 0.0) - 1
-y_predicted = np.argmax(f_predicted, axis=0)
-y_predicted = y_predicted.reshape(-1)
-print(y_predicted)
-print("shape", y_predicted.shape)
-print("shape", y_train.shape)
+y_predicted = func(y_train, X_train, N_train, C, s, epsilon)
 confusion_matrix = pd.crosstab(y_predicted, y_train, rownames = ['y_predicted'], colnames = ['y_train'])
 print(confusion_matrix)
 
 
-
-confusion_matrix = pd.crosstab(y_predicted, y_test, rownames=['y_pred'], colnames=['y_truth'])
+y_predicted = func(y_test, X_test, N_test, C, s, epsilon)
+confusion_matrix = pd.crosstab(y_predicted, y_test, rownames=['y_predicted'], colnames=['y_test'])
 print("Confusion_matrix for test:")
 print(confusion_matrix)
+
+# Accuracy score
+def accuracy_score(y_pred, y_truth):
+    score = 0
+    for index in range(len(y_truth)):
+        if y_pred[index] == y_truth[index]:
+            score += 1
+    accuracy_score = float(score / len(y_truth))
+    return accuracy_score
+
+# Visualization
+C_values = [0.1,1,10,100,1000]
+s = 10
+train_list = []
+test_list = []
+for c in C_values:
+    # Train
+    y_predicted_train = func(y_train, X_train, N_train, C, s, epsilon)
+    accuracy_score_train = accuracy_score(y_predicted_train, y_train)
+    train_list.append(accuracy_score_train)
+    # Test
+    y_predicted_test = func(y_test, X_test, N_test, C, s, epsilon)
+    accuracy_score_test = accuracy_score(y_predicted_test, y_test)
+    test_list.append(accuracy_score_test)
+
+plt.figure(figsize=(6, 6))
+plt.plot(C_values, train_list, "-ob", markersize=4, label='training')
+plt.plot(C_values, test_list, "-or", markersize=4, label='test')
+plt.xlabel("Pre-pruning size (P)")
+plt.ylabel("RMSE")
+plt.legend(loc='upper right')
+plt.show()
+
+
