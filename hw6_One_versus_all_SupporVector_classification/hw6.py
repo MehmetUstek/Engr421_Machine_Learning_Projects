@@ -25,52 +25,6 @@ def gaussian_kernel(X1, X2, s):
     return (K)
 
 
-# def func2(y_truth, X_given, N_given, C, s, epsilon, K_test=None):
-#     f_predicted = []
-#     K_trick = gaussian_kernel(X_given, X_given, s)
-#     for k in range(1, K + 1):
-#         y_indexes = (y_truth == k) * 2 - 1
-#         yyK = np.matmul(y_indexes[:, None], y_indexes[None, :]) * K_trick
-#         # print(yyK)
-#         P = cvx.matrix(yyK)
-#         q = cvx.matrix(-np.ones((N_given, 1)))
-#         G = cvx.matrix(np.vstack((-np.eye(N_given), np.eye(N_given))))
-#         h = cvx.matrix(np.vstack((np.zeros((N_given, 1)), C * np.ones((N_given, 1)))))
-#         A = cvx.matrix(1.0 * y_indexes[None, :])
-#         b = cvx.matrix(0.0)
-#
-#         # use cvxopt library to solve QP problems
-#         result = cvx.solvers.qp(P, q, G, h, A, b)
-#         alpha = np.reshape(result["x"], N_given)
-#         # Most of the alpha values should be 0.
-#         alpha[alpha < C * epsilon] = 0
-#         alpha[alpha > C * (1 - epsilon)] = C
-#         # print(alpha)
-#         # What is the purpose of cutting small values to 0?
-#         # What is the purpose of cutting larger values that are close to C directly to C value 10.
-#         # To find support indices!
-#         # Non zero alpha coefficient vectors are called support vectors!
-#
-#         # find bias parameter
-#         support_indices, = np.where(alpha != 0)
-#         # print(support_indices)
-#         active_indices, = np.where(np.logical_and(alpha != 0, alpha < C))
-#         # Alpha points between 0 and C. As seen in the ipynb subject to.
-#         w0 = np.mean(
-#             y_indexes[active_indices] * (
-#                         1 - np.matmul(yyK[np.ix_(active_indices, support_indices)], alpha[support_indices])))
-#
-#         ## Training performance
-#         # calculate predictions on training samples
-#         if hasattr(K_test, 'shape'):
-#             f_predicted.append(np.matmul(K_test, y_indexes[:, None] * alpha[:, None]) + w0)
-#         else:
-#             f_predicted.append(np.matmul(K_trick, y_indexes[:, None] * alpha[:, None]) + w0)
-#
-#     y_predicted = np.argmax(f_predicted, axis=0) + 1
-#     y_predicted = y_predicted.reshape(-1)
-#     return y_predicted
-
 def func(y_indexes, X_given, N_given, C, s, epsilon):
     K_trick = gaussian_kernel(X_given, X_given, s)
     yyK = np.matmul(y_indexes[:, None], y_indexes[None, :]) * K_trick
@@ -115,13 +69,13 @@ def predict(K_train, K_test, C, s):
         f_predicted_train.append(np.matmul(K_train, y_indexes[:, None] * alpha[:, None]) + w0)
         # Test
         f_predicted_test.append(np.matmul(K_test, y_indexes[:, None] * alpha[:, None]) + w0)
-    y_predicted_test = np.argmax(f_predicted_test, axis=0) + 1
-    y_predicted_test = y_predicted_test.reshape(-1)
+    y_predicted_test1 = np.argmax(f_predicted_test, axis=0) + 1
+    y_predicted_test1 = y_predicted_test1.reshape(-1)
 
-    y_predicted_train = np.argmax(f_predicted_train, axis=0) + 1
-    y_predicted_train = y_predicted_train.reshape(-1)
+    y_predicted_train1 = np.argmax(f_predicted_train, axis=0) + 1
+    y_predicted_train1 = y_predicted_train1.reshape(-1)
 
-    return y_predicted_train, y_predicted_test
+    return y_predicted_train1, y_predicted_test1
 
 
 C = 10
@@ -167,7 +121,7 @@ for c in C_values:
     accuracy_score_test = accuracy_score(y_predicted_test, y_test)
     test_list.append(accuracy_score_test)
 
-str_list = ["1e-1","1","10", "10^2","10^3"]
+str_list = ["1e-1", "1", "10", "10^2", "10^3"]
 plt.figure(figsize=(10, 6))
 plt.plot(str_list, train_list, "-ob", markersize=4, label='training')
 plt.plot(str_list, test_list, "-or", markersize=4, label='test')
