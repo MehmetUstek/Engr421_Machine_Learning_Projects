@@ -68,26 +68,33 @@ def func(y_truth, X_given, N_given, C, s, epsilon):
     y_predicted = y_predicted.reshape(-1)
     return y_predicted
 
-def predict(y_given, w0, alpha, K_trick ):
-    f_predicted = []
-    pass
-
-
-
+def predict(y_predicted_train):
+    kernel = gaussian_kernel(X_test, X_train, s)
+    # for alpha in kernel:
+    #     alpha[alpha < C * epsilon] = 0
+    #     alpha[alpha > C * (1 - epsilon)] = C
+    #     support_indices, = np.where(alpha != 0)
+    #     # print(support_indices)
+    #     active_indices, = np.where(np.logical_and(alpha != 0, alpha < C))
+    #     np.argmax(kernel, axis=1)
+    y_pred = np.argmax(kernel, axis=1)
+    ret_val = y_predicted_train[y_pred]
+    return ret_val
 
 
 C = 10
 epsilon = 1e-3
 s = 10
-# y_predicted_train1 = func(y_train, X_train, N_train, C, s, epsilon)
-# confusion_matrix = pd.crosstab(y_predicted_train1, y_train, rownames=['y_predicted'], colnames=['y_train'])
-# print("Confusion_matrix for train:")
-# print(confusion_matrix)
 
-# y_predicted_test1 = func(y_test, X_test, N_test, C, s, epsilon)
-# confusion_matrix = pd.crosstab(y_predicted_test1, y_test, rownames=['y_predicted'], colnames=['y_test'])
-# print("Confusion_matrix for test:")
-# print(confusion_matrix)
+y_predicted_train1 = func(y_train, X_train, N_train, C, s, epsilon)
+confusion_matrix = pd.crosstab(y_predicted_train1, y_train, rownames=['y_predicted'], colnames=['y_train'])
+print("Confusion_matrix for train:")
+print(confusion_matrix)
+
+y_predicted_test1 = predict(y_predicted_train1)
+confusion_matrix = pd.crosstab(y_predicted_test1, y_test, rownames=['y_predicted'], colnames=['y_test'])
+print("Confusion_matrix for test:")
+print(confusion_matrix)
 
 
 # Accuracy score
@@ -101,7 +108,7 @@ def accuracy_score(y_pred, y_truth):
 
 
 # Visualization
-C_values = [0.1, 1,100]
+C_values = [0.1, 1,10, 100,1000]
 s = 1
 train_list = []
 test_list = []
