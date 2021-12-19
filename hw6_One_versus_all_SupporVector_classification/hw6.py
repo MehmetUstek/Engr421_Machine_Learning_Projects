@@ -17,6 +17,7 @@ K = 5
 N_train = len(y_train)
 N_test = len(y_test)
 
+
 # define Gaussian kernel function
 def gaussian_kernel(X1, X2, s):
     D = dt.cdist(X1, X2)
@@ -100,18 +101,18 @@ def func(y_indexes, X_given, N_given, C, s, epsilon):
     # Alpha points between 0 and C. As seen in the ipynb subject to.
     w0 = np.mean(
         y_indexes[active_indices] * (
-                    1 - np.matmul(yyK[np.ix_(active_indices, support_indices)], alpha[support_indices])))
+                1 - np.matmul(yyK[np.ix_(active_indices, support_indices)], alpha[support_indices])))
     return alpha, w0
 
-def predict_test(K_train, K_test, C, s):
+
+def predict(K_train, K_test, C, s):
     f_predicted_train = []
     f_predicted_test = []
-    for k in range(1, K+1):
+    for k in range(1, K + 1):
         y_indexes = (y_train == k) * 2 - 1
-        alpha , w0 = func(y_indexes, X_train, N_train, C, s, epsilon)
+        alpha, w0 = func(y_indexes, X_train, N_train, C, s, epsilon)
         # Train
         f_predicted_train.append(np.matmul(K_train, y_indexes[:, None] * alpha[:, None]) + w0)
-
         # Test
         f_predicted_test.append(np.matmul(K_test, y_indexes[:, None] * alpha[:, None]) + w0)
     y_predicted_test = np.argmax(f_predicted_test, axis=0) + 1
@@ -123,20 +124,17 @@ def predict_test(K_train, K_test, C, s):
     return y_predicted_train, y_predicted_test
 
 
-
 C = 10
 epsilon = 1e-3
 s = 10
 K_train = gaussian_kernel(X_train, X_train, s)
 K_test = gaussian_kernel(X_test, X_train, s)
 
-y_predicted_train1, y_predicted_test1 = predict_test(K_train, K_test, C, s)
+y_predicted_train1, y_predicted_test1 = predict(K_train, K_test, C, s)
 
 confusion_matrix = pd.crosstab(y_predicted_train1, y_train, rownames=['y_predicted'], colnames=['y_train'])
 print("Confusion_matrix for train:")
 print(confusion_matrix)
-
-
 
 confusion_matrix = pd.crosstab(y_predicted_test1, y_test, rownames=['y_predicted'], colnames=['y_test'])
 print("Confusion_matrix for test:")
@@ -160,7 +158,7 @@ train_list = []
 test_list = []
 for c in C_values:
     # Train
-    y_predicted_train, y_predicted_test = predict_test(K_train, K_test, c, s)
+    y_predicted_train, y_predicted_test = predict(K_train, K_test, c, s)
 
     accuracy_score_train = accuracy_score(y_predicted_train, y_train)
     train_list.append(accuracy_score_train)
@@ -169,12 +167,11 @@ for c in C_values:
     accuracy_score_test = accuracy_score(y_predicted_test, y_test)
     test_list.append(accuracy_score_test)
 
+str_list = ["1e-1","1","10", "10^2","10^3"]
 plt.figure(figsize=(10, 6))
-plt.plot(C_values, train_list, "-ob", markersize=4, label='training')
-plt.plot(C_values, test_list, "-or", markersize=4, label='test')
+plt.plot(str_list, train_list, "-ob", markersize=4, label='training')
+plt.plot(str_list, test_list, "-or", markersize=4, label='test')
 plt.xlabel("Regularization Parameter (C)")
 plt.ylabel("Accuracy")
 plt.legend(loc='upper left')
-# plt.axes().set_aspect('equal')
 plt.show()
-
