@@ -121,7 +121,7 @@ for c in C_values:
     accuracy_score_test = accuracy_score(y_predicted_test, y_test)
     test_list.append(accuracy_score_test)
 
-str_list = ["1e-1", "1", "10", "10^2", "10^3"]
+str_list = ["10^-1", "10^0", "10^1", "10^2", "10^3"]
 plt.figure(figsize=(10, 6))
 plt.plot(str_list, train_list, "-ob", markersize=4, label='training')
 plt.plot(str_list, test_list, "-or", markersize=4, label='test')
