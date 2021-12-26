@@ -14,7 +14,7 @@ plt.figure(figsize=(8, 8))
 plt.plot(x1, x2, "k.", markersize=12)
 plt.xlabel("$x_1$")
 plt.ylabel("$x_2$")
-plt.show()
+# plt.show()
 
 class_means = np.array([[2.5, 2.5], [-2.5, 2.5], [-2.5, -2.5],[2.5, -2.5],[0.0, 0.0]])
 
@@ -39,13 +39,14 @@ class_covariances = np.array([[
     ]
 ])
 
-priors = np.array([50, 50, 50, 50, 100])
+class_sizes = np.array([50, 50, 50, 50, 100])
+N = sum(class_sizes)
 
-points1 = np.random.multivariate_normal(class_means[0, :], class_covariances[0, :, :], priors[0])
-points2 = np.random.multivariate_normal(class_means[1, :], class_covariances[1, :, :], priors[1])
-points3 = np.random.multivariate_normal(class_means[2, :], class_covariances[2, :, :], priors[2])
-points4 = np.random.multivariate_normal(class_means[3, :], class_covariances[3, :, :], priors[3])
-points5 = np.random.multivariate_normal(class_means[4, :], class_covariances[4, :, :], priors[4])
+points1 = np.random.multivariate_normal(class_means[0, :], class_covariances[0, :, :], class_sizes[0])
+points2 = np.random.multivariate_normal(class_means[1, :], class_covariances[1, :, :], class_sizes[1])
+points3 = np.random.multivariate_normal(class_means[2, :], class_covariances[2, :, :], class_sizes[2])
+points4 = np.random.multivariate_normal(class_means[3, :], class_covariances[3, :, :], class_sizes[3])
+points5 = np.random.multivariate_normal(class_means[4, :], class_covariances[4, :, :], class_sizes[4])
 
 probabilities = [1/6, 1/6, 1/6, 1/6, 1/3]
 
@@ -71,26 +72,36 @@ def update_memberships(centroids, X):
     # find the nearest centroid for each data point
     # Nearest centroid.
     memberships = np.argmin(D, axis = 0)
+    # class_covariances =
     return(memberships)
-def e_step(t, k):
+def e_step(t, k, Fi):
+    class_means = Fi[0]
+    class_covariances = Fi[1]
+    probabilities = Fi[2]
     denominator = 0.0
-    iteration_gaussian = multivariate_normal.pdf(points, mean= centroids[t, :], cov= class_covariances[t, :, :])
+    iteration_gaussian = multivariate_normal.pdf(points, mean= class_means[k, :], cov= class_covariances[k, :, :])
     numerator = iteration_gaussian * probabilities[k]
     for c in range(K):
-        # current_point = np.random.multivariate_normal(centroids[t, :], class_covariances[t, :, :], priors[c])
-        current_gaussian = multivariate_normal.pdf(points, mean= centroids[t, :], cov= class_covariances[t, :, :])
+        current_gaussian = multivariate_normal.pdf(points, mean= class_means[c, :], cov= class_covariances[c, :, :])
         denominator += current_gaussian * probabilities[c]
     return numerator / denominator
 
 
-def m_step(memberships, X, class_covariances, probabilities):
+def m_step(memberships, X, Fi):
     if memberships is None:
         centroids = initial_centroids
+        memberships = update_memberships(centroids, X)
     else:
-        centroids = np.vstack([np.mean(X[memberships == k, :], axis=0) for k in range(K)])
-        class_covariances = np.vstack([np.mean((X[memberships == k, :] - centroids[k]) * np.transpose(X[memberships == k, :] - centroids[k]), axis=0) for k in range(K)])
-        probabilities = np.vstack([np.sum(X[memberships == k, :], axis=0)/ K for k in range(K)])
-    return (centroids, class_covariances, probabilities)
+        centroids = Fi[0]
+        class_covariances = Fi[1]
+        probabilities = Fi[2]
+        for k in range(K):
+            centroids[k] = np.mean(X[memberships == k, :], axis=0)
+            class_covariances[k] = np.mean((X[memberships == k, :] - class_means[k, :])[:, None] * X[memberships == k, :] - class_means[k, :][None, :])
+            probabilities[k] = np.sum(X[memberships == k, :], axis=0) / N
+        # centroids = np.vstack([np.mean(X[memberships == k, :], axis=0) for k in range(K)])
+    return (centroids, memberships)
+
 
 
 def plot_current_state(centroids, memberships, X):
@@ -111,12 +122,16 @@ def plot_current_state(centroids, memberships, X):
 centroids = None
 memberships = None
 iteration = 1
+Fi = []
 while True:
     print("Iteration#{}:".format(iteration))
 
     old_centroids = centroids
+    old_memberships = memberships
+
     # centroids = update_centroids(memberships, points)
-    centroids, class_covariances, probabilities = m_step(memberships, points, class_covariances, probabilities)
+    Fi = [class_means, class_covariances, probabilities]
+    centroids,memberships = m_step(memberships, points, Fi)
     if np.alltrue(centroids == old_centroids):
         break
     else:
@@ -124,12 +139,11 @@ while True:
         plt.subplot(1, 2, 1)
         plot_current_state(centroids, memberships, points)
 
-    old_memberships = memberships
-    # memberships = update_memberships(centroids, points)
-    membership_probs = []
-    for k in range(K):
-        membership_probs.append(e_step(iteration, k))
-    memberships = np.argmax(membership_probs, axis= 0)
+    memberships = update_memberships(centroids, points)
+    # membership_probs = []
+    # for a in range(K):
+    #     membership_probs.append(e_step(iteration, a, Fi))
+    # memberships = np.argmax(membership_probs, axis= 0)
     if np.alltrue(memberships == old_memberships):
         plt.show()
         break
