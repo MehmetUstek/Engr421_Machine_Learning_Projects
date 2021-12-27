@@ -75,14 +75,14 @@ def update_memberships(centroids, X):
     # class_covariances =
     return(memberships)
 def e_step(t, Fi):
-    class_means = Fi[0]
+    centroids = Fi[0]
     class_covariances = Fi[1]
     probabilities = Fi[2]
     denominator = 0.0
-    numerator = np.vstack([multivariate_normal.pdf(points, mean= class_means[k, :], cov= class_covariances[k, :, :]) * probabilities[k] for k in range(K)])
+    numerator = np.vstack([multivariate_normal.pdf(points, mean= centroids[k, :], cov= class_covariances[k, :, :]) * probabilities[k] for k in range(K)])
     # numerator = iteration_gaussian * probabilities[k]
     for c in range(K):
-        current_gaussian = multivariate_normal.pdf(points, mean= class_means[c, :], cov= class_covariances[c, :, :])
+        current_gaussian = multivariate_normal.pdf(points, mean= centroids[c, :], cov= class_covariances[c, :, :])
         denominator += current_gaussian * probabilities[c]
     probs = numerator / denominator
     return probs.T
@@ -101,20 +101,40 @@ def m_step(memberships, X, Fi, memberships_probs):
         centroids = initial_centroids
         memberships = update_memberships(centroids, X)
         class_covariances = np.array([
-            np.mat(X[memberships == k, :] - class_means[k, :]).T * np.mat(X[memberships == k, :] - class_means[k, :])
+            np.mat(X[memberships == k, :] - centroids[k, :]).T * np.mat(X[memberships == k, :] - centroids[k, :])
             for k in range(K)])
         probabilities = np.array(np.bincount(memberships) / N)
         Fi = (centroids, class_covariances, probabilities)
     else:
-        centroids = np.vstack([np.mean(X[memberships == k, :], axis=0) for k in range(K)])
-        class_covariances = np.array([
-            np.mat(X[memberships == k, :] - class_means[k, :]).T * np.mat(X[memberships == k, :] - class_means[k, :])
-            for k in range(K)])
-        probabilities = np.array(np.bincount(memberships) / N)
-        # np.vstack(memberships_probs[memberships == k, :])
-        probabilities = [np.divide(np.sum(memberships_probs[memberships == k, :]), N) for k in range(K)]
+        # centroids = np.vstack([np.mean(X[memberships == k, :], axis=0) for k in range(K)])
+        # class_covariances = np.array([
+        #     np.mat(X[memberships == k, :] - centroids[k, :]).T * np.mat(X[memberships == k, :] - centroids[k, :])
+        #     for k in range(K)])
+        denom = 0.0
+        centroids = np.zeros(shape=(5,2))
+        for i in range(N):
+            current_point = memberships_probs[i]
+            for k in range(K):
+                centroids[k] += current_point[k] * X[i]
+            denom += np.array([np.sum(current_point[k]) for k in range(K)])
+        centroids = (centroids.T / denom).T
+        denom = 0.0
+        class_covariances = np.zeros(shape=(5,2,2))
+        for i in range(N):
+            current_point = memberships_probs[i]
+            for k in range(K):
+                class_covariances[k] += current_point[k] * (X[i] - centroids[k,:]) * (X[i] - centroids[k,:]).T
+            denom += np.array([np.sum(current_point[k]) for k in range(K)])
+        class_covariances = (class_covariances.T / denom).T
+
+        probabilities = [0,0,0,0,0]
+        for i in range(N):
+            current_point = memberships_probs[i]
+            probabilities += np.array([np.sum(current_point[k]) for k in range(K)])
+        probabilities = probabilities / N
+        # probabilities = np.array([np.mat(np.divide(np.sum(memberships_probs[memberships == k, :]), N)) for k in range(K)])
         Fi = centroids, class_covariances, probabilities
-        # memberships = np.argmax(probabilities, axis=1)
+        # memberships = np.argmax(memberships_probs, axis=1)
     return (Fi, memberships)
 
 
