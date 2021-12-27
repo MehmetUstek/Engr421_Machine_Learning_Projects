@@ -86,16 +86,25 @@ def e_step(t, k, Fi):
         denominator += current_gaussian * probabilities[c]
     return numerator / denominator
 
+def update_means(points, probabilities):
+    pass
+
+# Probabilities will have shape (points, 5) (for every point, probability of that 5 clusters)
+def update_memberships2(probabilities):
+    memberships = np.argmax(probabilities, axis=1)
+    return (memberships)
 
 def m_step(memberships, X, Fi):
     if memberships is None:
         centroids = initial_centroids
         memberships = update_memberships(centroids, X)
+        Fi = (centroids, None, None)
     else:
         centroids = np.vstack([np.mean(X[memberships == k, :], axis=0) for k in range(K)])
         class_covariances = np.vstack([np.mean((X[memberships == k, :] - class_means[k, :])[:, None] * X[memberships == k, :] - class_means[k, :][None, :]) for k in range(K)])
         probabilities = np.vstack([np.sum(X[memberships == k, :], axis=0) / N for k in range(K)])
         Fi = centroids, class_covariances, probabilities
+        # memberships = np.argmax(probabilities, axis=0)
     return (Fi, memberships)
 
 
@@ -126,7 +135,7 @@ while True:
     old_memberships = memberships
 
     # centroids = update_centroids(memberships, points)
-    Fi = [class_means, class_covariances, probabilities]
+    Fi = [centroids, class_covariances, probabilities]
     Fi,memberships = m_step(memberships, points, Fi)
     centroids = Fi[0]
     class_covariances = Fi[1]
