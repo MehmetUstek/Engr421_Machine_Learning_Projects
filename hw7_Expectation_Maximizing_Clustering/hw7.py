@@ -17,6 +17,29 @@ plt.ylabel("$x_2$")
 plt.show()
 N = points.shape[0]
 
+class_means_given = np.array([[2.5, 2.5], [-2.5, 2.5], [-2.5, -2.5], [2.5, -2.5], [0.0, 0.0]])
+
+class_covariances_given = np.array([[
+    [0.8, -0.6],
+    [-0.6, 0.8]],
+    [
+        [0.8, 0.6],
+        [0.6, 0.8]
+    ],
+    [
+        [0.8, -0.6],
+        [-0.6, 0.8]
+    ],
+    [
+        [0.8, 0.6],
+        [0.6, 0.8]
+    ],
+    [
+        [1.6, 0.0],
+        [0.0, 1.6]
+    ]
+])
+
 
 def update_memberships(centroids, X):
     D = spa.distance_matrix(centroids, X)
@@ -68,7 +91,7 @@ def m_step(X, memberships_probabilities):
     return (Fi)
 
 
-def plot_current_state(centroids, memberships, X):
+def plot_current_state(centroids, memberships, X, class_covariances, class_means_given, class_covariances_given):
     cluster_colors = np.array(["#1f78b4", "#33a02c", "#e31a1c", "#ff7f00", "#6a3d9a", "#b15928",
                                "#a6cee3", "#b2df8a", "#fb9a99", "#fdbf6f", "#cab2d6", "#ffff99"])
     if memberships is None:
@@ -82,6 +105,16 @@ def plot_current_state(centroids, memberships, X):
                  markerfacecolor=cluster_colors[c], markeredgecolor="black")
     plt.xlabel("x1")
     plt.ylabel("x2")
+
+    aa, bb = np.mgrid[-6:6:.01, -6:6:.01]
+    pos = np.empty(aa.shape + (2,))
+    pos[:, :, 0] = aa
+    pos[:, :, 1] = bb
+    for k in range(K):
+        EM = multivariate_normal(centroids[k, :], class_covariances[k])
+        plt.contour(aa, bb, EM.pdf(pos), colors=cluster_colors[k], levels=[0.05])
+        given = multivariate_normal(class_means_given[k], class_covariances_given[k])
+        plt.contour(aa, bb, given.pdf(pos), linestyles='dashed', levels=[0.05], colors='k')
 
 
 # centroids = None
@@ -115,6 +148,7 @@ for i in range(100):
     iteration = iteration + 1
 print(centroids)
 memberships = np.argmax(membership_probabilities, axis=1)
-plt.subplot(1,2,2)
-plot_current_state(centroids, memberships, points)
+# plt.subplot(1,2,2)
+plt.figure(figsize=(8, 8))
+plot_current_state(centroids, memberships, points, class_covariances, class_means_given, class_covariances_given)
 plt.show()
