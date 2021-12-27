@@ -74,13 +74,13 @@ def update_memberships(centroids, X):
     memberships = np.argmin(D, axis = 0)
     # class_covariances =
     return(memberships)
-def e_step(t, k, Fi):
+def e_step(t, Fi):
     class_means = Fi[0]
     class_covariances = Fi[1]
     probabilities = Fi[2]
     denominator = 0.0
-    iteration_gaussian = multivariate_normal.pdf(points, mean= class_means[k, :], cov= class_covariances[k, :, :])
-    numerator = iteration_gaussian * probabilities[k]
+    numerator = np.vstack([multivariate_normal.pdf(points, mean= class_means[k, :], cov= class_covariances[k, :, :]) * probabilities[k] for k in range(K)])
+    # numerator = iteration_gaussian * probabilities[k]
     for c in range(K):
         current_gaussian = multivariate_normal.pdf(points, mean= class_means[c, :], cov= class_covariances[c, :, :])
         denominator += current_gaussian * probabilities[c]
@@ -98,7 +98,12 @@ def m_step(memberships, X, Fi):
     if memberships is None:
         centroids = initial_centroids
         memberships = update_memberships(centroids, X)
-        Fi = (centroids, None, None)
+        class_covariances = np.array([
+            np.mat(X[memberships == k, :] - class_means[k, :]).T * np.mat(X[memberships == k, :] - class_means[k, :])
+            for k in range(K)])
+        probabilities = np.vstack([np.divide(np.sum(X[memberships == k, :]), N) for k in range(K)])
+        probs = np.vstack([np.sum(X[memberships == k, :]) for k in range(K)])
+        Fi = (centroids, class_covariances, probabilities)
     else:
         centroids = np.vstack([np.mean(X[memberships == k, :], axis=0) for k in range(K)])
         class_covariances = np.vstack([np.mean((X[memberships == k, :] - class_means[k, :])[:, None] * X[memberships == k, :] - class_means[k, :][None, :]) for k in range(K)])
@@ -126,6 +131,9 @@ def plot_current_state(centroids, memberships, X):
 
 centroids = None
 memberships = None
+class_covariances = None
+probabilities = None
+
 iteration = 1
 Fi = []
 while True:
@@ -135,7 +143,7 @@ while True:
     old_memberships = memberships
 
     # centroids = update_centroids(memberships, points)
-    Fi = [centroids, class_covariances, probabilities]
+    Fi = (centroids, class_covariances, probabilities)
     Fi,memberships = m_step(memberships, points, Fi)
     centroids = Fi[0]
     class_covariances = Fi[1]
@@ -147,11 +155,13 @@ while True:
         plt.subplot(1, 2, 1)
         plot_current_state(centroids, memberships, points)
 
-    memberships = update_memberships(centroids, points)
+    # memberships = update_memberships(centroids, points)
+    memberships = e_step(iteration, Fi)
     # membership_probs = []
     # for a in range(K):
     #     membership_probs.append(e_step(iteration, a, Fi))
     # memberships = np.argmax(membership_probs, axis= 0)
+
     if np.alltrue(memberships == old_memberships):
         plt.show()
         # break
