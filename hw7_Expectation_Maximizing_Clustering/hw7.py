@@ -123,7 +123,7 @@ def m_step(memberships, X, Fi, memberships_probs):
         for i in range(N):
             current_point = memberships_probs[i]
             for k in range(K):
-                class_covariances[k] += current_point[k] * (X[i] - centroids[k,:]) * (X[i] - centroids[k,:]).T
+                class_covariances[k] += current_point[k] * (X[i] - centroids[k])[None,:] * (X[i] - centroids[k])[:,None]
             denom += np.array([np.sum(current_point[k]) for k in range(K)])
         class_covariances = (class_covariances.T / denom).T
 
