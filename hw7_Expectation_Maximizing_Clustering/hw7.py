@@ -106,15 +106,17 @@ def plot_current_state(centroids, memberships, X, class_covariances, class_means
     plt.xlabel("x1")
     plt.ylabel("x2")
 
-    aa, bb = np.mgrid[-6:6:.01, -6:6:.01]
-    pos = np.empty(aa.shape + (2,))
-    pos[:, :, 0] = aa
-    pos[:, :, 1] = bb
+    x1_interval = np.linspace(-6, +6, 1201)
+    x2_interval = np.linspace(-6, +6, 1201)
+    x1_grid, x2_grid = np.meshgrid(x1_interval, x2_interval)
+    # dstack concatenates these arrays into a third dimension. I found this implementation after
+    # long search on documentations of vstack in numpy library.
+    positions = np.dstack((x1_grid, x2_grid))
     for k in range(K):
-        EM = multivariate_normal(centroids[k, :], class_covariances[k])
-        plt.contour(aa, bb, EM.pdf(pos), colors=cluster_colors[k], levels=[0.05])
-        given = multivariate_normal(class_means_given[k], class_covariances_given[k])
-        plt.contour(aa, bb, given.pdf(pos), linestyles='dashed', levels=[0.05], colors='k')
+        EM_points = multivariate_normal(centroids[k], class_covariances[k]).pdf(positions)
+        plt.contour(x1_grid, x2_grid, EM_points, colors=cluster_colors[k], levels=[0.05])
+        given_points = multivariate_normal(class_means_given[k], class_covariances_given[k]).pdf(positions)
+        plt.contour(x1_grid, x2_grid, given_points, linestyles='dashed', levels=[0.05], colors='k')
 
 
 # centroids = None
@@ -148,7 +150,6 @@ for i in range(100):
     iteration = iteration + 1
 print(centroids)
 memberships = np.argmax(membership_probabilities, axis=1)
-# plt.subplot(1,2,2)
 plt.figure(figsize=(8, 8))
 plot_current_state(centroids, memberships, points, class_covariances, class_means_given, class_covariances_given)
 plt.show()
