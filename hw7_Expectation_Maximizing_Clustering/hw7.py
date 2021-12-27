@@ -5,7 +5,6 @@ from scipy.stats import multivariate_normal
 
 initial_centroids = np.genfromtxt("hw07_initial_centroids.csv", delimiter=",")
 points = np.genfromtxt("hw07_data_set.csv", delimiter=",")
-# TODO: K = ?
 K = 5
 x1 = points[:, 0]
 x2 = points[:, 1]
@@ -111,11 +110,11 @@ def plot_current_state(centroids, memberships, X, class_covariances, class_means
     x1_grid, x2_grid = np.meshgrid(x1_interval, x2_interval)
     # dstack concatenates these arrays into a third dimension. I found this implementation after
     # long search on documentations of vstack in numpy library.
-    positions = np.dstack((x1_grid, x2_grid))
+    intervals = np.dstack((x1_grid, x2_grid))
     for k in range(K):
-        EM_points = multivariate_normal(centroids[k], class_covariances[k]).pdf(positions)
+        EM_points = multivariate_normal(centroids[k], class_covariances[k]).pdf(intervals)
         plt.contour(x1_grid, x2_grid, EM_points, colors=cluster_colors[k], levels=[0.05])
-        given_points = multivariate_normal(class_means_given[k], class_covariances_given[k]).pdf(positions)
+        given_points = multivariate_normal(class_means_given[k], class_covariances_given[k]).pdf(intervals)
         plt.contour(x1_grid, x2_grid, given_points, linestyles='dashed', levels=[0.05], colors='k')
 
 
@@ -137,7 +136,7 @@ probabilities = np.array(class_sizes / N)
 iteration = 1
 Fi = []
 for i in range(100):
-    print("Iteration#{}:".format(iteration))
+    # print("Iteration#{}:".format(iteration))
 
     Fi = (centroids, class_covariances, probabilities)
     membership_probabilities = e_step(Fi)
@@ -148,6 +147,7 @@ for i in range(100):
     probabilities = Fi[2]
 
     iteration = iteration + 1
+print("Mean Vectors")
 print(centroids)
 memberships = np.argmax(membership_probabilities, axis=1)
 plt.figure(figsize=(8, 8))
