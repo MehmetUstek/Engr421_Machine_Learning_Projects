@@ -134,13 +134,18 @@ def get_D_matrix(B):
 
 
 
-def spectral_clustering(X):
+def spectral_clustering(X, R = 5):
     B = bij(X, X, 1.25)
     #TODO: D matrix now
     D = get_D_matrix(B)
     #TODO: L matrix
     L = L_symmetric(N, D, B)
+    values, vectors = linalg.eig(L)
+    vectors_temp = np.sort(vectors)
+    # vectors_temp = vectors_temp[:R]
+    Z = vectors_temp[:R]
 
+    k_means_clustering(Z)
     return L
 
 spectral_clustering(points)
