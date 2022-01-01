@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import scipy.spatial as spa
 from scipy.stats import multivariate_normal
 import scipy.linalg as linalg
+import scipy.spatial.distance as dt
 
 
 points = np.genfromtxt("hw08_data_set.csv", delimiter=",")
@@ -14,7 +15,7 @@ plt.figure(figsize=(8, 8))
 plt.plot(x1, x2, "k.", markersize=12)
 plt.xlabel("$x_1$")
 plt.ylabel("$x_2$")
-plt.show()
+# plt.show()
 N = points.shape[0]
 
 class_means_given = np.array([[2.5, 2.5], [-2.5, 2.5], [-2.5, -2.5], [2.5, -2.5], [0.0, 0.0]])
@@ -98,7 +99,10 @@ def k_means_clustering(X):
         iteration = iteration + 1
 
 def L_symmetric(N, D, B):
-    return np.identity(N) - np.dot(np.dot(D**(-1/2), B), D**(-1/2))
+    identity_matrix = np.identity(N)
+    result = np.dot(np.linalg.inv(D) ** (1 / 2), B)
+    result = np.dot(result, np.linalg.inv(D) ** (1 / 2))
+    return identity_matrix - result
 
 # Returns eigenvalues, eigenvectors.
 def PCA(X):
@@ -110,4 +114,34 @@ def PCA(X):
     values = np.real(values)
     vectors = np.real(vectors)
     return values, vectors
+
+# define Gaussian kernel function
+def bij(X1, X2, threshold):
+    D = dt.cdist(X1, X2)
+    B = (D < threshold).astype(int)
+    for i in range(B.shape[0]):
+        B[i][i] = 0
+    return (B)
+
+def get_D_matrix(B):
+    D = np.zeros(shape=(B.shape))
+    row_number = 0
+    for row in B:
+        sum = np.sum(row)
+        D[row_number][row_number] = sum
+        row_number += 1
+    return D
+
+
+
+def spectral_clustering(X):
+    B = bij(X, X, 1.25)
+    #TODO: D matrix now
+    D = get_D_matrix(B)
+    #TODO: L matrix
+    L = L_symmetric(N, D, B)
+
+    return L
+
+spectral_clustering(points)
 
