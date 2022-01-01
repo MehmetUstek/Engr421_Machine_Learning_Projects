@@ -44,7 +44,9 @@ class_covariances_given = np.array([[
 # Step 2
 def update_centroids(memberships, X):
     if memberships is None:
-        centroids = X[[29, 143, 204, 271, 277],]
+        centroids = X[np.array([29, 143, 204, 271, 277]),]
+        # centroids = Z[[29, 143, 204, 271, 277],]
+        # X[np.random.choice(range(N), K, False),]
     else:
         centroids = np.vstack([np.mean(X[memberships == k, :], axis=0) for k in range(K)])
     return (centroids)
@@ -106,10 +108,11 @@ def k_means_clustering(X):
     plt.show()
 
 
+
 def L_symmetric(N, D, B):
     identity_matrix = np.identity(N)
-    result = np.dot(np.linalg.inv(D) ** (1 / 2), B)
-    result = np.dot(result, np.linalg.inv(D) ** (1 / 2))
+    result = np.dot(np.linalg.inv(np.sqrt(D)), B)
+    result = np.dot(result, np.linalg.inv(np.sqrt(D)))
     return identity_matrix - result
 
 def L_random_walk(N, D, B):
@@ -118,7 +121,7 @@ def L_random_walk(N, D, B):
     return identity_matrix - result
 
 def bij(X1, X2, threshold):
-    D = dt.cdist(X1, X2)
+    D = dt.cdist(X1, X2, "euclidean")
     B = (D < threshold).astype(int)
     for i in range(B.shape[0]):
         B[i][i] = 0
@@ -156,23 +159,40 @@ def draw(B, X):
     plt.ylabel("$x_2$")
     plt.show()
 
+def PCA(X):
+    # calculate the covariance matrix
+    Sigma_X = np.cov(np.transpose(X))
 
+    # calculate the eigenvalues and eigenvectors
+    values, vectors = linalg.eig(Sigma_X)
+    values = np.real(values)
+    vectors = np.real(vectors)
+    return values, vectors
 
 def spectral_clustering(X, R=5):
     B = bij(X, X, 1.25)
+    np.set_printoptions(threshold=np.inf)
+    # print(B)
     # draw(B, X)
     # TODO: D matrix now
     D = get_D_matrix(B)
+    print("D")
+    # print(D)
     # TODO: L matrix
     L = L_symmetric(N, D, B)
+    print("L")
+    # print(L)
     # L = L_random_walk(N, D, B)
     values, vectors = linalg.eig(L)
+    values = np.real(values)
+    vectors = np.real(vectors)
+    # values, vectors = PCA(L)
     # values[0] = 0
     # values = np.array(values, dtype=float)
     idx = np.argsort(values)[:R + 1]
     # Argpartition is probably valid. since the imaginary part.
 
-    Z = vectors[idx[1:R + 1]].T
+    Z = np.transpose(vectors[idx[1:R + 1]])
 
     k_means_clustering(Z)
 
