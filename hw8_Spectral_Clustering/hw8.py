@@ -112,20 +112,11 @@ def L_symmetric(N, D, B):
     result = np.dot(result, np.linalg.inv(D) ** (1 / 2))
     return identity_matrix - result
 
+def L_random_walk(N, D, B):
+    identity_matrix = np.identity(N)
+    result = np.dot(np.linalg.inv(D), B)
+    return identity_matrix - result
 
-# Returns eigenvalues, eigenvectors.
-def PCA(X):
-    # calculate the covariance matrix
-    Sigma_X = np.cov(np.transpose(X))
-
-    # calculate the eigenvalues and eigenvectors
-    values, vectors = linalg.eig(Sigma_X)
-    values = np.real(values)
-    vectors = np.real(vectors)
-    return values, vectors
-
-
-# define Gaussian kernel function
 def bij(X1, X2, threshold):
     D = dt.cdist(X1, X2)
     B = (D < threshold).astype(int)
@@ -151,13 +142,15 @@ def draw(B, X):
         col_iterator = 0
         for j in row:
             if j:
-                plt.plot(X[row_iterator], X[col_iterator])
+                x1_temp= X[row_iterator]
+                x2_temp = X[col_iterator]
+                x_values = [x1_temp[0], x2_temp[0]]
+                y_values = [x1_temp[1], x2_temp[1]]
+                plt.plot(x_values, y_values, "-", color= "gray")
             col_iterator +=1
         row_iterator += 1
     x1 = points[:, 0]
     x2 = points[:, 1]
-    # Plotting Data
-
     plt.plot(x1, x2, "k.", markersize=12)
     plt.xlabel("$x_1$")
     plt.ylabel("$x_2$")
@@ -167,11 +160,12 @@ def draw(B, X):
 
 def spectral_clustering(X, R=5):
     B = bij(X, X, 1.25)
-    draw(B, X)
+    # draw(B, X)
     # TODO: D matrix now
     D = get_D_matrix(B)
     # TODO: L matrix
     L = L_symmetric(N, D, B)
+    # L = L_random_walk(N, D, B)
     values, vectors = linalg.eig(L)
     # values[0] = 0
     # values = np.array(values, dtype=float)
