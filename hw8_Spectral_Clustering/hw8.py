@@ -1,10 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.spatial as spa
-from scipy.stats import multivariate_normal
-import scipy.linalg as linalg
 import scipy.spatial.distance as dt
-from sklearn.cluster import KMeans
 
 points = np.genfromtxt("hw08_data_set.csv", delimiter=",")
 K = 5
@@ -45,7 +42,7 @@ class_covariances_given = np.array([[
 # Step 2
 def update_centroids(memberships, X):
     if memberships is None:
-        centroids = X[np.array([29, 143, 204, 271, 277]),]
+        centroids = X[np.array([28, 142, 203, 270, 276]),]
     else:
         centroids = np.vstack([np.mean(X[memberships == k, :], axis=0) for k in range(K)])
     return (centroids)
@@ -159,9 +156,7 @@ def spectral_clustering(X, R=5):
     vectors = np.real(vectors)
 
     vectors = vectors[:, np.argsort(values)]
-    values = values[np.argsort(values)]
     Z = vectors[:, 1:R + 1]
-    print(X.shape)
 
     memberships = k_means_clustering(Z)
     centroids = update_centroids(memberships, X)
@@ -170,18 +165,5 @@ def spectral_clustering(X, R=5):
     plt.subplot(1, 2, 1)
     plot_current_state(centroids, memberships, X)
     plt.show()
-    print(centroids)
-
-    kmeans = KMeans(n_clusters=5)
-    labels = kmeans.fit_predict(Z)
-    centroids = update_centroids(labels, X)
-
-    plt.figure(figsize=(12, 6))
-    plt.subplot(1, 2, 1)
-    plot_current_state(centroids, labels, X)
-    plt.show()
-    print(centroids)
-
-
 
 spectral_clustering(points)
