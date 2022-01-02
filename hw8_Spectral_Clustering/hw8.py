@@ -4,17 +4,20 @@ import scipy.spatial as spa
 from scipy.stats import multivariate_normal
 import scipy.linalg as linalg
 import scipy.spatial.distance as dt
+from sklearn.cluster import KMeans
+
+
 
 points = np.genfromtxt("hw08_data_set.csv", delimiter=",")
 K = 5
-# x1 = points[:, 0]
-# x2 = points[:, 1]
-# # Plotting Data
-# plt.figure(figsize=(8, 8))
-# plt.plot(x1, x2, "k.", markersize=12)
-# plt.xlabel("$x_1$")
-# plt.ylabel("$x_2$")
-# plt.show()
+x1 = points[:, 0]
+x2 = points[:, 1]
+# Plotting Data
+plt.figure(figsize=(8, 8))
+plt.plot(x1, x2, "k.", markersize=12)
+plt.xlabel("$x_1$")
+plt.ylabel("$x_2$")
+plt.show()
 N = points.shape[0]
 
 class_means_given = np.array([[2.5, 2.5], [-2.5, 2.5], [-2.5, -2.5], [2.5, -2.5], [0.0, 0.0]])
@@ -42,11 +45,9 @@ class_covariances_given = np.array([[
 
 
 # Step 2
-def update_centroids(memberships, X):
+def update_centroids(memberships, X, K):
     if memberships is None:
-        centroids = X[np.array([29, 143, 204, 271, 277]),]
-        # centroids = Z[[29, 143, 204, 271, 277],]
-        # X[np.random.choice(range(N), K, False),]
+        centroids = X[np.array([29, 143, 204, 271, 277])]
     else:
         centroids = np.vstack([np.mean(X[memberships == k, :], axis=0) for k in range(K)])
     return (centroids)
@@ -75,7 +76,7 @@ def plot_current_state(centroids, memberships, X):
     plt.ylabel("x2")
 
 
-def k_means_clustering(X):
+def k_means_clustering(X, K):
     centroids = None
     memberships = None
     iteration = 1
@@ -83,59 +84,51 @@ def k_means_clustering(X):
         print("Iteration#{}:".format(iteration))
 
         old_centroids = centroids
-        centroids = update_centroids(memberships, X)
+        centroids = update_centroids(memberships, X, K)
         if np.alltrue(centroids == old_centroids):
             break
-        # else:
-        #     plt.figure(figsize=(12, 6))
-        #     plt.subplot(1, 2, 1)
-        #     plot_current_state(centroids, memberships, X)
 
         old_memberships = memberships
         memberships = update_memberships(centroids, X)
         if np.alltrue(memberships == old_memberships):
-            # plt.show()
             break
-        # else:
-        #     plt.subplot(1, 2, 2)
-        #     plot_current_state(centroids, memberships, X)
-        #     plt.show()
 
         iteration = iteration + 1
-    plt.figure(figsize=(12, 6))
-    plt.subplot(1, 2, 1)
-    plot_current_state(centroids, memberships, X)
-    plt.show()
-    return centroids, memberships
+    return memberships
 
 
 
-def L_symmetric(N, D, B):
-    identity_matrix = np.identity(N)
-    result = np.dot(np.linalg.inv(np.sqrt(D)), B)
-    result = np.dot(result, np.linalg.inv(np.sqrt(D)))
-    return identity_matrix - result
+def L_symmetric(D, B):
+    identity_matrix = np.identity(D.shape[0])
+    D_temp = np.linalg.inv(np.sqrt(D))
+    result = np.dot(D_temp, B).dot(D_temp)
+    # result = np.dot(np.linalg.inv(np.sqrt(D)), B)
+    # result = np.dot(result, np.linalg.inv(np.sqrt(D)))
+    return np.asarray(identity_matrix- result)
+
 
 def L_random_walk(N, D, B):
     identity_matrix = np.identity(N)
-    result = np.dot(np.linalg.inv(D), B)
+    inverse = np.linalg.inv(D)
+    result = np.dot(inverse, B)
     return identity_matrix - result
 
 def bij(X1, X2, threshold):
     D = dt.cdist(X1, X2, "euclidean")
-    B = (D < threshold).astype(int)
+    B = (D <= threshold).astype(int)
     for i in range(B.shape[0]):
         B[i][i] = 0
     return (B)
 
 
 def get_D_matrix(B):
-    D = np.zeros(shape=(B.shape))
-    row_number = 0
-    for row in B:
-        sum = np.sum(row)
-        D[row_number][row_number] = sum
-        row_number += 1
+    D = np.diag(B.sum(axis=1))
+    # D = np.zeros(shape=(B.shape))
+    # row_number = 0
+    # for row in B:
+    #     sum = np.sum(row)
+    #     D[row_number][row_number] = sum
+    #     row_number += 1
     return D
 
 
@@ -160,57 +153,40 @@ def draw(B, X):
     plt.ylabel("$x_2$")
     plt.show()
 
-def PCA(X):
-    # calculate the covariance matrix
-    Sigma_X = np.cov(np.transpose(X))
-
-    # calculate the eigenvalues and eigenvectors
-    values, vectors = linalg.eig(Sigma_X)
-    values = np.real(values)
-    vectors = np.real(vectors)
-    return values, vectors
 
 def spectral_clustering(X, R=5):
+    K = 5
     B = bij(X, X, 1.25)
-    # print(B)
-    # draw(B, X)
-    # TODO: D matrix now
     D = get_D_matrix(B)
-    print("D")
-    # print(D)
-    # TODO: L matrix
-    L = L_symmetric(N, D, B)
-    print("L")
-    # print(L)
+    L = L_symmetric(D, B)
+    # L = D - B
     # L = L_random_walk(N, D, B)
-    # values, vectors = linalg.eig(L)
-    # values = np.real(values)
-    # vectors = np.real(vectors)
-    values, vectors = PCA(L)
-    # values[0] = 0
-    # values = np.array(values, dtype=float)
-    idx = np.argsort(values)[:R + 1]
-    # Argpartition is probably valid. since the imaginary part.
-    # Normalization on rows. Not sure if necessary!
-    Z = np.transpose(vectors[idx[1:R + 1]])
-    for i in range(len(Z)):
-        sum = 0.0
-        temp = Z[i]
-        for k in range(len(temp)):
-            sum += temp[k]**2
-        sum = sum**(1/2)
-        Z[i] = Z[i] / sum
-    # Z = np.matmul(np.transpose(vectors), X)[idx[1:R + 1]]
-    print(vectors[:, idx[1:R + 1]].shape)
-    print(X.shape)
-    # Z = np.matmul(X, vectors[idx[1:R + 1],:])
-    # X_reconstructed = np.matmul(Z, np.transpose(vectors[:,idx[1:R + 1]])) + np.mean(X, axis=0)
+    values, vectors = np.linalg.eig(L)
+    values = np.real(values)
+    vectors = np.real(vectors)
 
-    centroids, memberships = k_means_clustering(Z)
-    # plt.figure(figsize=(12, 6))
-    # plt.subplot(1, 2, 1)
-    # plot_current_state(centroids, memberships, X)
-    # plt.show()
+    vectors = vectors[:, np.argsort(values)]
+    values = values[np.argsort(values)]
+    Z = vectors[:,1:R+1]
+    print(X.shape)
+
+    memberships = k_means_clustering(Z, K)
+    centroids = update_centroids(memberships, X, K)
+
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 2, 1)
+    plot_current_state(centroids, memberships, X)
+    plt.show()
+    print(centroids)
+
+    kmeans = KMeans(n_clusters=5)
+    labels = kmeans.fit_predict(Z)
+    centroids = update_centroids(labels, X, K)
+
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 2, 1)
+    plot_current_state(centroids, labels, X)
+    plt.show()
     print(centroids)
 
 
