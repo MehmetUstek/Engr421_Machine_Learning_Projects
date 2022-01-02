@@ -45,9 +45,9 @@ class_covariances_given = np.array([[
 
 
 # Step 2
-def update_centroids(memberships, X, K):
+def update_centroids(memberships, X):
     if memberships is None:
-        centroids = X[np.array([29, 143, 204, 271, 277])]
+        centroids = X[np.array([29, 143, 204, 271, 277]),]
     else:
         centroids = np.vstack([np.mean(X[memberships == k, :], axis=0) for k in range(K)])
     return (centroids)
@@ -76,7 +76,7 @@ def plot_current_state(centroids, memberships, X):
     plt.ylabel("x2")
 
 
-def k_means_clustering(X, K):
+def k_means_clustering(X):
     centroids = None
     memberships = None
     iteration = 1
@@ -84,10 +84,9 @@ def k_means_clustering(X, K):
         print("Iteration#{}:".format(iteration))
 
         old_centroids = centroids
-        centroids = update_centroids(memberships, X, K)
+        centroids = update_centroids(memberships, X)
         if np.alltrue(centroids == old_centroids):
             break
-
         old_memberships = memberships
         memberships = update_memberships(centroids, X)
         if np.alltrue(memberships == old_memberships):
@@ -155,7 +154,6 @@ def draw(B, X):
 
 
 def spectral_clustering(X, R=5):
-    K = 5
     B = bij(X, X, 1.25)
     D = get_D_matrix(B)
     L = L_symmetric(D, B)
@@ -170,8 +168,8 @@ def spectral_clustering(X, R=5):
     Z = vectors[:,1:R+1]
     print(X.shape)
 
-    memberships = k_means_clustering(Z, K)
-    centroids = update_centroids(memberships, X, K)
+    memberships = k_means_clustering(Z)
+    centroids = update_centroids(memberships, X)
 
     plt.figure(figsize=(12, 6))
     plt.subplot(1, 2, 1)
@@ -181,7 +179,7 @@ def spectral_clustering(X, R=5):
 
     kmeans = KMeans(n_clusters=5)
     labels = kmeans.fit_predict(Z)
-    centroids = update_centroids(labels, X, K)
+    centroids = update_centroids(labels, X)
 
     plt.figure(figsize=(12, 6))
     plt.subplot(1, 2, 1)
