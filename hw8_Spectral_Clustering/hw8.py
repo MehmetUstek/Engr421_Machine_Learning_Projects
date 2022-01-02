@@ -106,6 +106,7 @@ def k_means_clustering(X):
     plt.subplot(1, 2, 1)
     plot_current_state(centroids, memberships, X)
     plt.show()
+    return centroids, memberships
 
 
 
@@ -171,7 +172,6 @@ def PCA(X):
 
 def spectral_clustering(X, R=5):
     B = bij(X, X, 1.25)
-    np.set_printoptions(threshold=np.inf)
     # print(B)
     # draw(B, X)
     # TODO: D matrix now
@@ -183,18 +183,35 @@ def spectral_clustering(X, R=5):
     print("L")
     # print(L)
     # L = L_random_walk(N, D, B)
-    values, vectors = linalg.eig(L)
-    values = np.real(values)
-    vectors = np.real(vectors)
-    # values, vectors = PCA(L)
+    # values, vectors = linalg.eig(L)
+    # values = np.real(values)
+    # vectors = np.real(vectors)
+    values, vectors = PCA(L)
     # values[0] = 0
     # values = np.array(values, dtype=float)
     idx = np.argsort(values)[:R + 1]
     # Argpartition is probably valid. since the imaginary part.
-
+    # Normalization on rows. Not sure if necessary!
     Z = np.transpose(vectors[idx[1:R + 1]])
+    for i in range(len(Z)):
+        sum = 0.0
+        temp = Z[i]
+        for k in range(len(temp)):
+            sum += temp[k]**2
+        sum = sum**(1/2)
+        Z[i] = Z[i] / sum
+    # Z = np.matmul(np.transpose(vectors), X)[idx[1:R + 1]]
+    print(vectors[:, idx[1:R + 1]].shape)
+    print(X.shape)
+    # Z = np.matmul(X, vectors[idx[1:R + 1],:])
+    # X_reconstructed = np.matmul(Z, np.transpose(vectors[:,idx[1:R + 1]])) + np.mean(X, axis=0)
 
-    k_means_clustering(Z)
+    centroids, memberships = k_means_clustering(Z)
+    # plt.figure(figsize=(12, 6))
+    # plt.subplot(1, 2, 1)
+    # plot_current_state(centroids, memberships, X)
+    # plt.show()
+    print(centroids)
 
 
 spectral_clustering(points)
