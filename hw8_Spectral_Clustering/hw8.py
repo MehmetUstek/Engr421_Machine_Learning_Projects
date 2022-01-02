@@ -6,8 +6,6 @@ import scipy.linalg as linalg
 import scipy.spatial.distance as dt
 from sklearn.cluster import KMeans
 
-
-
 points = np.genfromtxt("hw08_data_set.csv", delimiter=",")
 K = 5
 x1 = points[:, 0]
@@ -96,21 +94,23 @@ def k_means_clustering(X):
     return memberships
 
 
-
 def L_symmetric(D, B):
     identity_matrix = np.identity(D.shape[0])
     D_temp = np.linalg.inv(np.sqrt(D))
     result = np.dot(D_temp, B).dot(D_temp)
-    # result = np.dot(np.linalg.inv(np.sqrt(D)), B)
-    # result = np.dot(result, np.linalg.inv(np.sqrt(D)))
-    return np.asarray(identity_matrix- result)
+    return np.asarray(identity_matrix - result)
 
 
-def L_random_walk(N, D, B):
-    identity_matrix = np.identity(N)
+def L_not_normalized(D, B):
+    return D - B
+
+
+def L_random_walk(D, B):
+    identity_matrix = np.identity(D.shape[0])
     inverse = np.linalg.inv(D)
     result = np.dot(inverse, B)
-    return identity_matrix - result
+    return np.asarray(identity_matrix - result)
+
 
 def bij(X1, X2, threshold):
     D = dt.cdist(X1, X2, "euclidean")
@@ -122,12 +122,6 @@ def bij(X1, X2, threshold):
 
 def get_D_matrix(B):
     D = np.diag(B.sum(axis=1))
-    # D = np.zeros(shape=(B.shape))
-    # row_number = 0
-    # for row in B:
-    #     sum = np.sum(row)
-    #     D[row_number][row_number] = sum
-    #     row_number += 1
     return D
 
 
@@ -138,12 +132,12 @@ def draw(B, X):
         col_iterator = 0
         for j in row:
             if j:
-                x1_temp= X[row_iterator]
+                x1_temp = X[row_iterator]
                 x2_temp = X[col_iterator]
                 x_values = [x1_temp[0], x2_temp[0]]
                 y_values = [x1_temp[1], x2_temp[1]]
-                plt.plot(x_values, y_values, "-", color= "gray")
-            col_iterator +=1
+                plt.plot(x_values, y_values, "-", color="gray")
+            col_iterator += 1
         row_iterator += 1
     x1 = points[:, 0]
     x2 = points[:, 1]
@@ -155,6 +149,7 @@ def draw(B, X):
 
 def spectral_clustering(X, R=5):
     B = bij(X, X, 1.25)
+    draw(B, X)
     D = get_D_matrix(B)
     L = L_symmetric(D, B)
     # L = D - B
@@ -165,7 +160,7 @@ def spectral_clustering(X, R=5):
 
     vectors = vectors[:, np.argsort(values)]
     values = values[np.argsort(values)]
-    Z = vectors[:,1:R+1]
+    Z = vectors[:, 1:R + 1]
     print(X.shape)
 
     memberships = k_means_clustering(Z)
@@ -186,6 +181,7 @@ def spectral_clustering(X, R=5):
     plot_current_state(centroids, labels, X)
     plt.show()
     print(centroids)
+
 
 
 spectral_clustering(points)
